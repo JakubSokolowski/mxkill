@@ -136,53 +136,97 @@ git commit -m "Add Swift package skeleton"
 
 **Files:**
 - Create: `Sources/mxkillCore/Options.swift`
-- Create: `Tests/mxkillTests/OptionsTests.swift`
-- Delete: `Tests/mxkillTests/SkeletonTests.swift`
+- Modify: `Sources/mxkillUnitTests/main.swift`
 
-- [ ] **Step 1: Write parser tests**
+- [ ] **Step 1: Add failing parser tests to the executable harness**
 
-Create `Tests/mxkillTests/OptionsTests.swift`:
+Replace `Sources/mxkillUnitTests/main.swift` with:
 
 ```swift
-import XCTest
-@testable import mxkillCore
+import Darwin
+import Foundation
+import mxkillCore
 
-final class OptionsTests: XCTestCase {
-    func testDefaultsUseTermSignalAndNoTimeout() throws {
-        let options = try Options.parse([])
+func fail(_ message: String) -> Never {
+    fputs("FAIL: \(message)\n", stderr)
+    exit(1)
+}
 
-        XCTAssertFalse(options.force)
-        XCTAssertFalse(options.dryRun)
-        XCTAssertFalse(options.includeSelf)
-        XCTAssertNil(options.timeoutSeconds)
+func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
+    if !condition() {
+        fail(message)
     }
+}
 
-    func testParsesSupportedFlags() throws {
-        let options = try Options.parse(["--force", "--dry-run", "--timeout", "3.5", "--include-self"])
-
-        XCTAssertTrue(options.force)
-        XCTAssertTrue(options.dryRun)
-        XCTAssertTrue(options.includeSelf)
-        XCTAssertEqual(options.timeoutSeconds, 3.5)
+func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+    if actual != expected {
+        fail("\(message): expected \(expected), got \(actual)")
     }
+}
 
-    func testRejectsUnknownFlag() {
-        XCTAssertThrowsError(try Options.parse(["--bogus"])) { error in
-            XCTAssertEqual(String(describing: error), "unknown option: --bogus")
-        }
+func expectNil<T>(_ value: T?, _ message: String) {
+    if let value {
+        fail("\(message): expected nil, got \(value)")
     }
+}
 
-    func testRejectsMissingTimeoutValue() {
-        XCTAssertThrowsError(try Options.parse(["--timeout"])) { error in
-            XCTAssertEqual(String(describing: error), "--timeout requires a positive number")
-        }
+func expectThrows(_ expectedDescription: String, _ message: String, _ operation: () throws -> Void) {
+    do {
+        try operation()
+        fail("\(message): expected throw")
+    } catch {
+        expectEqual(String(describing: error), expectedDescription, message)
     }
+}
 
-    func testRejectsInvalidTimeoutValue() {
-        XCTAssertThrowsError(try Options.parse(["--timeout", "0"])) { error in
-            XCTAssertEqual(String(describing: error), "--timeout requires a positive number")
-        }
+func testHarnessIsConfigured() {
+    expectEqual("mxkill", "mxkill", "test harness is configured")
+}
+
+func testDefaultsUseTermSignalAndNoTimeout() throws {
+    let options = try Options.parse([])
+    expect(!options.force, "default force is false")
+    expect(!options.dryRun, "default dryRun is false")
+    expect(!options.includeSelf, "default includeSelf is false")
+    expectNil(options.timeoutSeconds, "default timeout is nil")
+}
+
+func testParsesSupportedFlags() throws {
+    let options = try Options.parse(["--force", "--dry-run", "--timeout", "3.5", "--include-self"])
+    expect(options.force, "force flag is parsed")
+    expect(options.dryRun, "dry-run flag is parsed")
+    expect(options.includeSelf, "include-self flag is parsed")
+    expectEqual(options.timeoutSeconds, 3.5, "timeout is parsed")
+}
+
+func testRejectsUnknownFlag() {
+    expectThrows("unknown option: --bogus", "unknown option rejection") {
+        _ = try Options.parse(["--bogus"])
     }
+}
+
+func testRejectsMissingTimeoutValue() {
+    expectThrows("--timeout requires a positive number", "missing timeout rejection") {
+        _ = try Options.parse(["--timeout"])
+    }
+}
+
+func testRejectsInvalidTimeoutValue() {
+    expectThrows("--timeout requires a positive number", "invalid timeout rejection") {
+        _ = try Options.parse(["--timeout", "0"])
+    }
+}
+
+do {
+    testHarnessIsConfigured()
+    try testDefaultsUseTermSignalAndNoTimeout()
+    try testParsesSupportedFlags()
+    testRejectsUnknownFlag()
+    testRejectsMissingTimeoutValue()
+    testRejectsInvalidTimeoutValue()
+    print("mxkillUnitTests: PASS")
+} catch {
+    fail("unexpected thrown error: \(error)")
 }
 ```
 
@@ -191,7 +235,7 @@ final class OptionsTests: XCTestCase {
 Run:
 
 ```bash
-swift test --filter OptionsTests
+swift run mxkillUnitTests
 ```
 
 Expected: FAIL because `Options` does not exist.
@@ -204,10 +248,10 @@ Create `Sources/mxkillCore/Options.swift`:
 import Foundation
 
 public struct Options: Equatable {
-    var force = false
-    var dryRun = false
-    var includeSelf = false
-    var timeoutSeconds: Double?
+    public var force = false
+    public var dryRun = false
+    public var includeSelf = false
+    public var timeoutSeconds: Double?
 
     public static let usage = """
     Usage: mxkill [--force] [--dry-run] [--timeout seconds] [--include-self]
@@ -251,7 +295,7 @@ public enum OptionsError: Error, CustomStringConvertible, Equatable {
     case unknownOption(String)
     case invalidTimeout
 
-    var description: String {
+    public var description: String {
         switch self {
         case .unknownOption(let option):
             return "unknown option: \(option)"
@@ -262,13 +306,13 @@ public enum OptionsError: Error, CustomStringConvertible, Equatable {
 }
 ```
 
-- [ ] **Step 4: Remove skeleton test and run all tests**
+- [ ] **Step 4: Run all tests and build**
 
 Run:
 
 ```bash
-rm Tests/mxkillTests/SkeletonTests.swift
-swift test
+swift run mxkillUnitTests
+swift build
 ```
 
 Expected: PASS.
@@ -276,8 +320,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/mxkillCore/Options.swift Tests/mxkillTests/OptionsTests.swift
-git rm Tests/mxkillTests/SkeletonTests.swift
+git add Sources/mxkillCore/Options.swift Sources/mxkillUnitTests/main.swift
 git commit -m "Add CLI option parsing"
 ```
 
@@ -285,47 +328,44 @@ git commit -m "Add CLI option parsing"
 
 **Files:**
 - Create: `Sources/mxkillCore/TargetSafety.swift`
-- Create: `Tests/mxkillTests/TargetSafetyTests.swift`
+- Modify: `Sources/mxkillUnitTests/main.swift`
 
-- [ ] **Step 1: Write safety tests**
+- [ ] **Step 1: Add failing safety tests to the executable harness**
 
-Create `Tests/mxkillTests/TargetSafetyTests.swift`:
+Add these functions before the final `do` block in `Sources/mxkillUnitTests/main.swift`:
 
 ```swift
-import XCTest
-@testable import mxkillCore
-
-final class TargetSafetyTests: XCTestCase {
-    func testRejectsZeroPid() {
-        XCTAssertThrowsError(try TargetSafety.validate(pid: 0, currentPid: 123, includeSelf: false)) { error in
-            XCTAssertEqual(String(describing: error), "refusing to signal invalid pid 0")
-        }
-    }
-
-    func testRejectsNegativePid() {
-        XCTAssertThrowsError(try TargetSafety.validate(pid: -1, currentPid: 123, includeSelf: false)) { error in
-            XCTAssertEqual(String(describing: error), "refusing to signal invalid pid -1")
-        }
-    }
-
-    func testRejectsSelfByDefault() {
-        XCTAssertThrowsError(try TargetSafety.validate(pid: 123, currentPid: 123, includeSelf: false)) { error in
-            XCTAssertEqual(String(describing: error), "refusing to signal mxkill itself; pass --include-self to allow it")
-        }
-    }
-
-    func testAllowsSelfWhenExplicitlyRequested() throws {
-        try TargetSafety.validate(pid: 123, currentPid: 123, includeSelf: true)
+func testRejectsZeroPid() {
+    expectThrows("refusing to signal invalid pid 0", "zero pid rejection") {
+        try TargetSafety.validate(pid: 0, currentPid: 123, includeSelf: false)
     }
 }
+
+func testRejectsNegativePid() {
+    expectThrows("refusing to signal invalid pid -1", "negative pid rejection") {
+        try TargetSafety.validate(pid: -1, currentPid: 123, includeSelf: false)
+    }
+}
+
+func testRejectsSelfByDefault() {
+    expectThrows("refusing to signal mxkill itself; pass --include-self to allow it", "self pid rejection") {
+        try TargetSafety.validate(pid: 123, currentPid: 123, includeSelf: false)
+    }
+}
+
+func testAllowsSelfWhenExplicitlyRequested() throws {
+    try TargetSafety.validate(pid: 123, currentPid: 123, includeSelf: true)
+}
 ```
+
+Also call the four new functions in the final `do` block.
 
 - [ ] **Step 2: Run safety tests to verify they fail**
 
 Run:
 
 ```bash
-swift test --filter TargetSafetyTests
+swift run mxkillUnitTests
 ```
 
 Expected: FAIL because `TargetSafety` does not exist.
@@ -353,7 +393,7 @@ public enum TargetSafetyError: Error, CustomStringConvertible, Equatable {
     case invalidPid(pid_t)
     case refusingSelf
 
-    var description: String {
+    public var description: String {
         switch self {
         case .invalidPid(let pid):
             return "refusing to signal invalid pid \(pid)"
@@ -369,7 +409,8 @@ public enum TargetSafetyError: Error, CustomStringConvertible, Equatable {
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
+swift build
 ```
 
 Expected: PASS.
@@ -377,7 +418,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/mxkillCore/TargetSafety.swift Tests/mxkillTests/TargetSafetyTests.swift
+git add Sources/mxkillCore/TargetSafety.swift Sources/mxkillUnitTests/main.swift
 git commit -m "Add target safety checks"
 ```
 
@@ -385,78 +426,78 @@ git commit -m "Add target safety checks"
 
 **Files:**
 - Create: `Sources/mxkillCore/SignalSender.swift`
-- Create: `Tests/mxkillTests/SignalSenderTests.swift`
+- Modify: `Sources/mxkillUnitTests/main.swift`
 
-- [ ] **Step 1: Write signal tests**
+- [ ] **Step 1: Add failing signal tests to the executable harness**
 
-Create `Tests/mxkillTests/SignalSenderTests.swift`:
+Add these functions before the final `do` block in `Sources/mxkillUnitTests/main.swift`:
 
 ```swift
-import XCTest
-@testable import mxkillCore
+func testUsesSigtermByDefault() {
+    expectEqual(SignalSender.signal(force: false), SIGTERM, "default signal")
+}
 
-final class SignalSenderTests: XCTestCase {
-    func testUsesSigtermByDefault() {
-        XCTAssertEqual(SignalSender.signal(force: false), SIGTERM)
-    }
+func testUsesSigkillWhenForced() {
+    expectEqual(SignalSender.signal(force: true), SIGKILL, "forced signal")
+}
 
-    func testUsesSigkillWhenForced() {
-        XCTAssertEqual(SignalSender.signal(force: true), SIGKILL)
-    }
+func testDryRunDoesNotInvokeKillFunction() throws {
+    var calls: [(pid_t, Int32)] = []
+    let result = try SignalSender.send(
+        pid: 999,
+        force: true,
+        dryRun: true,
+        killFunction: { pid, signal in
+            calls.append((pid, signal))
+            return 0
+        }
+    )
 
-    func testDryRunDoesNotInvokeKillFunction() throws {
-        var calls: [(pid_t, Int32)] = []
-        let result = try SignalSender.send(
-            pid: 999,
-            force: true,
-            dryRun: true,
-            killFunction: { pid, signal in
-                calls.append((pid, signal))
-                return 0
-            }
-        )
+    expectEqual(result, .dryRun(signal: SIGKILL), "dry-run signal result")
+    expect(calls.isEmpty, "dry-run does not call kill")
+}
 
-        XCTAssertEqual(result, .dryRun(signal: SIGKILL))
-        XCTAssertTrue(calls.isEmpty)
-    }
+func testSendInvokesKillFunction() throws {
+    var calls: [(pid_t, Int32)] = []
+    let result = try SignalSender.send(
+        pid: 999,
+        force: false,
+        dryRun: false,
+        killFunction: { pid, signal in
+            calls.append((pid, signal))
+            return 0
+        }
+    )
 
-    func testSendInvokesKillFunction() throws {
-        var calls: [(pid_t, Int32)] = []
-        let result = try SignalSender.send(
-            pid: 999,
-            force: false,
-            dryRun: false,
-            killFunction: { pid, signal in
-                calls.append((pid, signal))
-                return 0
-            }
-        )
+    expectEqual(result, .sent(signal: SIGTERM), "sent signal result")
+    expectEqual(calls.count, 1, "kill call count")
+    expectEqual(calls.first?.0, 999, "kill pid")
+    expectEqual(calls.first?.1, SIGTERM, "kill signal")
+}
 
-        XCTAssertEqual(result, .sent(signal: SIGTERM))
-        XCTAssertEqual(calls.count, 1)
-        XCTAssertEqual(calls.first?.0, 999)
-        XCTAssertEqual(calls.first?.1, SIGTERM)
-    }
-
-    func testThrowsWhenKillFunctionFails() {
-        XCTAssertThrowsError(try SignalSender.send(
+func testThrowsWhenKillFunctionFails() {
+    do {
+        _ = try SignalSender.send(
             pid: 999,
             force: false,
             dryRun: false,
             killFunction: { _, _ in -1 }
-        )) { error in
-            XCTAssertTrue(String(describing: error).contains("failed to signal pid 999"))
-        }
+        )
+        fail("failed kill should throw")
+    } catch {
+        expect(String(describing: error).contains("failed to signal pid 999"), "failed kill error includes pid")
     }
 }
 ```
+
+Also call the five new functions in the final `do` block.
 
 - [ ] **Step 2: Run signal tests to verify they fail**
 
 Run:
 
 ```bash
-swift test --filter SignalSenderTests
+swift run mxkillUnitTests
 ```
 
 Expected: FAIL because `SignalSender` does not exist.
@@ -500,14 +541,14 @@ public enum SignalSender {
 }
 
 public struct SignalSenderError: Error, CustomStringConvertible, Equatable {
-    let pid: pid_t
-    let errnoCode: Int32
+    public let pid: pid_t
+    public let errnoCode: Int32
 
-    static func signalFailed(pid: pid_t, errnoCode: Int32) -> SignalSenderError {
+    public static func signalFailed(pid: pid_t, errnoCode: Int32) -> SignalSenderError {
         SignalSenderError(pid: pid, errnoCode: errnoCode)
     }
 
-    var description: String {
+    public var description: String {
         "failed to signal pid \(pid): \(String(cString: strerror(errnoCode)))"
     }
 }
@@ -518,7 +559,8 @@ public struct SignalSenderError: Error, CustomStringConvertible, Equatable {
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
+swift build
 ```
 
 Expected: PASS.
@@ -526,7 +568,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/mxkillCore/SignalSender.swift Tests/mxkillTests/SignalSenderTests.swift
+git add Sources/mxkillCore/SignalSender.swift Sources/mxkillUnitTests/main.swift
 git commit -m "Add signal sender"
 ```
 
@@ -711,7 +753,7 @@ Expected: PASS. Fix compile errors only in the runtime files if AppKit/Applicati
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
 ```
 
 Expected: PASS.
@@ -806,7 +848,7 @@ Expected: PASS and `.build/release/mxkill` exists.
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
 ```
 
 Expected: PASS.
