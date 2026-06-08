@@ -72,6 +72,12 @@ func testRejectsInvalidTimeoutValue() {
     }
 }
 
+func testRejectsInfiniteTimeoutValue() {
+    expectThrows("--timeout requires a positive number", "infinite timeout rejection") {
+        _ = try Options.parse(["--timeout", "inf"])
+    }
+}
+
 do {
     testHarnessIsConfigured()
     try testDefaultsUseTermSignalAndNoTimeout()
@@ -79,6 +85,7 @@ do {
     testRejectsUnknownFlag()
     testRejectsMissingTimeoutValue()
     testRejectsInvalidTimeoutValue()
+    testRejectsInfiniteTimeoutValue()
     print("mxkillUnitTests: PASS")
 } catch {
     fail("unexpected thrown error: \(error)")

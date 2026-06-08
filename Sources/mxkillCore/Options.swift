@@ -28,6 +28,7 @@ public struct Options: Equatable {
                 index += 1
                 guard index < arguments.count,
                       let timeout = Double(arguments[index]),
+                      timeout.isFinite,
                       timeout > 0
                 else {
                     throw OptionsError.invalidTimeout
