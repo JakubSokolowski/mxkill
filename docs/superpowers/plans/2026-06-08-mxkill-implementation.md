@@ -4,15 +4,15 @@
 
 **Goal:** Build `mxkill`, a native macOS CLI that lets the user click a window and terminate the owning process.
 
-**Architecture:** Use Swift Package Manager with a thin executable target, a small library target, and a test target. Keep pure logic in testable library files (`Options`, `TargetSafety`, `SignalSender`) and isolate macOS UI/Accessibility code behind small runtime components used by the executable.
+**Architecture:** Use Swift Package Manager with a thin executable target, a small library target, and an executable test harness target. Keep pure logic in testable library files (`Options`, `TargetSafety`, `SignalSender`) and isolate macOS UI/Accessibility code behind small runtime components used by the executable.
 
-**Tech Stack:** Swift Package Manager, XCTest, AppKit, ApplicationServices, Darwin.
+**Tech Stack:** Swift Package Manager, executable Swift test harness, AppKit, ApplicationServices, Darwin.
 
 ---
 
 ## File Structure
 
-- `Package.swift`: SwiftPM manifest defining the `mxkillCore` library, `mxkill` executable, and `mxkillTests`.
+- `Package.swift`: SwiftPM manifest defining the `mxkillCore` library, `mxkill` executable, and `mxkillUnitTests` executable harness.
 - `Sources/mxkill/main.swift`: thin CLI entrypoint that calls `MXKill.run(arguments:)`.
 - `Sources/mxkillCore/MXKill.swift`: orchestration that parses options, checks Accessibility permission, runs click selection, and sends the chosen signal.
 - `Sources/mxkillCore/Options.swift`: hand-written argument parsing and usage text.
@@ -21,9 +21,7 @@
 - `Sources/mxkillCore/AccessibilityPermission.swift`: checks and prompts for macOS Accessibility permission.
 - `Sources/mxkillCore/ClickPicker.swift`: AppKit event loop for left click selection, right click cancellation, Escape cancellation, and timeout.
 - `Sources/mxkillCore/AccessibilityHitTester.swift`: resolves the clicked screen point to an owning PID and process name.
-- `Tests/mxkillTests/OptionsTests.swift`: parser tests.
-- `Tests/mxkillTests/TargetSafetyTests.swift`: safety checks.
-- `Tests/mxkillTests/SignalSenderTests.swift`: signal selection and dry-run behavior.
+- `Sources/mxkillUnitTests/main.swift`: executable test harness for pure logic tests.
 
 ## Task 1: Swift Package Skeleton
 
@@ -31,31 +29,35 @@
 - Create: `Package.swift`
 - Create: `Sources/mxkill/main.swift`
 - Create: `Sources/mxkillCore/MXKill.swift`
-- Create: `Tests/mxkillTests/SkeletonTests.swift`
+- Create: `Sources/mxkillUnitTests/main.swift`
 
-- [ ] **Step 1: Write the failing skeleton test**
+- [ ] **Step 1: Write the failing executable harness test**
 
-Create `Tests/mxkillTests/SkeletonTests.swift`:
+Create `Sources/mxkillUnitTests/main.swift`:
 
 ```swift
-import XCTest
+import Foundation
 
-final class SkeletonTests: XCTestCase {
-    func testTestTargetIsConfigured() {
-        XCTAssertEqual("mxkill", "mxkill")
+func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+    if actual != expected {
+        fputs("FAIL: \(message): expected \(expected), got \(actual)\n", stderr)
+        exit(1)
     }
 }
+
+expectEqual("mxkill", "mxkill", "test harness is configured")
+print("mxkillUnitTests: PASS")
 ```
 
-- [ ] **Step 2: Run test to verify it fails before package exists**
+- [ ] **Step 2: Run test harness to verify it fails before the target exists**
 
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
 ```
 
-Expected: FAIL because `Package.swift` and targets are not configured yet.
+Expected: FAIL because the `mxkillUnitTests` executable product is not configured yet.
 
 - [ ] **Step 3: Add the SwiftPM manifest and empty executable**
 
@@ -71,7 +73,8 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "mxkill", targets: ["mxkill"])
+        .executable(name: "mxkill", targets: ["mxkill"]),
+        .executable(name: "mxkillUnitTests", targets: ["mxkillUnitTests"])
     ],
     targets: [
         .target(
@@ -81,8 +84,8 @@ let package = Package(
             name: "mxkill",
             dependencies: ["mxkillCore"]
         ),
-        .testTarget(
-            name: "mxkillTests",
+        .executableTarget(
+            name: "mxkillUnitTests",
             dependencies: ["mxkillCore"]
         )
     ]
@@ -92,6 +95,7 @@ let package = Package(
 Create `Sources/mxkill/main.swift`:
 
 ```swift
+import Darwin
 import mxkillCore
 
 exit(MXKill.run(arguments: Array(CommandLine.arguments.dropFirst())))
@@ -115,7 +119,8 @@ public enum MXKill {
 Run:
 
 ```bash
-swift test
+swift run mxkillUnitTests
+swift build
 ```
 
 Expected: PASS.
@@ -123,7 +128,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Package.swift Sources/mxkill/main.swift Sources/mxkillCore/MXKill.swift Tests/mxkillTests/SkeletonTests.swift
+git add Package.swift Sources/mxkill/main.swift Sources/mxkillCore/MXKill.swift Sources/mxkillUnitTests/main.swift docs/superpowers/plans/2026-06-08-mxkill-implementation.md
 git commit -m "Add Swift package skeleton"
 ```
 
