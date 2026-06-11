@@ -160,6 +160,46 @@ func testThrowsWhenKillFunctionFails() {
     }
 }
 
+func testConvertsPrimaryScreenPointToAccessibilityCoordinates() {
+    let screens = [
+        CGRect(x: 0, y: 0, width: 1440, height: 900)
+    ]
+
+    let point = AccessibilityHitTester.accessibilityPoint(
+        forAppKitPoint: CGPoint(x: 20, y: 100),
+        screens: screens
+    )
+
+    expectEqual(point, CGPoint(x: 20, y: 800), "primary screen coordinate conversion")
+}
+
+func testConvertsNonPrimaryScreenPointToAccessibilityCoordinates() {
+    let screens = [
+        CGRect(x: 0, y: 0, width: 1440, height: 900),
+        CGRect(x: -1280, y: 0, width: 1280, height: 1024)
+    ]
+
+    let point = AccessibilityHitTester.accessibilityPoint(
+        forAppKitPoint: CGPoint(x: -100, y: 200),
+        screens: screens
+    )
+
+    expectEqual(point, CGPoint(x: -100, y: 824), "non-primary screen coordinate conversion")
+}
+
+func testReturnsNilWhenPointIsOutsideScreens() {
+    let screens = [
+        CGRect(x: 0, y: 0, width: 1440, height: 900)
+    ]
+
+    let point = AccessibilityHitTester.accessibilityPoint(
+        forAppKitPoint: CGPoint(x: 1500, y: 100),
+        screens: screens
+    )
+
+    expectNil(point, "outside screen coordinate conversion")
+}
+
 do {
     testHarnessIsConfigured()
     try testDefaultsUseTermSignalAndNoTimeout()
@@ -177,6 +217,9 @@ do {
     try testDryRunDoesNotInvokeKillFunction()
     try testSendInvokesKillFunction()
     testThrowsWhenKillFunctionFails()
+    testConvertsPrimaryScreenPointToAccessibilityCoordinates()
+    testConvertsNonPrimaryScreenPointToAccessibilityCoordinates()
+    testReturnsNilWhenPointIsOutsideScreens()
     print("mxkillUnitTests: PASS")
 } catch {
     fail("unexpected thrown error: \(error)")

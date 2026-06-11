@@ -5,6 +5,7 @@ public enum PickResult: Equatable {
     case selected(CGPoint)
     case cancelled
     case timedOut
+    case failedToInstallMonitor
 }
 
 public final class ClickPicker {
@@ -17,7 +18,12 @@ public final class ClickPicker {
         NSApplication.shared.setActivationPolicy(.accessory)
         NSCursor.crosshair.set()
 
-        installMonitors()
+        guard installMonitors() else {
+            removeMonitors()
+            NSCursor.arrow.set()
+            return .failedToInstallMonitor
+        }
+
         scheduleTimeout(timeoutSeconds)
 
         while result == nil {
@@ -40,20 +46,32 @@ public final class ClickPicker {
         return result ?? .cancelled
     }
 
-    private func installMonitors() {
-        monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
+    private func installMonitors() -> Bool {
+        guard let leftMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown], handler: { [weak self] _ in
             self?.result = .selected(NSEvent.mouseLocation)
-        } as Any)
+        }) else {
+            return false
+        }
 
-        monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.rightMouseDown]) { [weak self] _ in
+        monitors.append(leftMouseMonitor)
+
+        guard let rightMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.rightMouseDown], handler: { [weak self] _ in
             self?.result = .cancelled
-        } as Any)
+        }) else {
+            return false
+        }
 
-        monitors.append(NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
+        monitors.append(rightMouseMonitor)
+
+        if let keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown], handler: { [weak self] event in
             if event.keyCode == 53 {
                 self?.result = .cancelled
             }
-        } as Any)
+        }) {
+            monitors.append(keyMonitor)
+        }
+
+        return true
     }
 
     private func scheduleTimeout(_ timeoutSeconds: Double?) {
