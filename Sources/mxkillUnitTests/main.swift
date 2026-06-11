@@ -148,11 +148,15 @@ func testThrowsWhenKillFunctionFails() {
             pid: 999,
             force: false,
             dryRun: false,
-            killFunction: { _, _ in -1 }
+            killFunction: { _, _ in
+                errno = ESRCH
+                return -1
+            }
         )
         fail("failed kill should throw")
     } catch {
         expect(String(describing: error).contains("failed to signal pid 999"), "failed kill error includes pid")
+        expectEqual(error as? SignalSenderError, SignalSenderError.signalFailed(pid: 999, errnoCode: ESRCH), "failed kill error captures errno")
     }
 }
 
