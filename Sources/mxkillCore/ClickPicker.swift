@@ -11,16 +11,18 @@ public enum PickResult: Equatable {
 public final class ClickPicker {
     private var result: PickResult?
     private var monitors: [Any] = []
+    private let overlay: HighlightOverlay
 
-    public init() {}
+    public init(overlay: HighlightOverlay = HighlightOverlay()) {
+        self.overlay = overlay
+    }
 
     public func pick(timeoutSeconds: Double?) -> PickResult {
         NSApplication.shared.setActivationPolicy(.accessory)
         NSCursor.crosshair.set()
 
         guard installMonitors() else {
-            removeMonitors()
-            NSCursor.arrow.set()
+            cleanup()
             return .failedToInstallMonitor
         }
 
@@ -41,9 +43,9 @@ public final class ClickPicker {
             }
         }
 
-        removeMonitors()
-        NSCursor.arrow.set()
-        return result ?? .cancelled
+        let finalResult = result ?? .cancelled
+        cleanup()
+        return finalResult
     }
 
     private func installMonitors() -> Bool {
@@ -63,6 +65,17 @@ public final class ClickPicker {
 
         monitors.append(rightMouseMonitor)
 
+        guard let mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged],
+            handler: { [weak self] event in
+                self?.updateHighlight(at: event.locationInWindow)
+            }
+        ) else {
+            return false
+        }
+
+        monitors.append(mouseMoveMonitor)
+
         if let keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown], handler: { [weak self] event in
             if event.keyCode == 53 {
                 self?.result = .cancelled
@@ -72,6 +85,15 @@ public final class ClickPicker {
         }
 
         return true
+    }
+
+    private func updateHighlight(at point: CGPoint) {
+        guard let target = AccessibilityHoverHitTester.hoverTarget(at: point) else {
+            overlay.hide()
+            return
+        }
+
+        overlay.show(frame: target.frame)
     }
 
     private func scheduleTimeout(_ timeoutSeconds: Double?) {
@@ -92,5 +114,11 @@ public final class ClickPicker {
         }
 
         monitors.removeAll()
+    }
+
+    private func cleanup() {
+        overlay.hide()
+        removeMonitors()
+        NSCursor.arrow.set()
     }
 }
