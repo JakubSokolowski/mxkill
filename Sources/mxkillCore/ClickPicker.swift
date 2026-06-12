@@ -47,8 +47,8 @@ public final class ClickPicker {
     }
 
     private func installMonitors() -> Bool {
-        guard let leftMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown], handler: { [weak self] _ in
-            self?.result = .selected(NSEvent.mouseLocation)
+        guard let leftMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown], handler: { [weak self] event in
+            self?.result = .selected(event.locationInWindow)
         }) else {
             return false
         }

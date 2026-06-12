@@ -173,7 +173,7 @@ func testConvertsPrimaryScreenPointToAccessibilityCoordinates() {
     expectEqual(point, CGPoint(x: 20, y: 800), "primary screen coordinate conversion")
 }
 
-func testConvertsNonPrimaryScreenPointToAccessibilityCoordinates() {
+func testConvertsHorizontalNonPrimaryScreenPointToAccessibilityCoordinates() {
     let screens = [
         CGRect(x: 0, y: 0, width: 1440, height: 900),
         CGRect(x: -1280, y: 0, width: 1280, height: 1024)
@@ -185,6 +185,34 @@ func testConvertsNonPrimaryScreenPointToAccessibilityCoordinates() {
     )
 
     expectEqual(point, CGPoint(x: -100, y: 824), "non-primary screen coordinate conversion")
+}
+
+func testConvertsScreenAbovePrimaryPointToAccessibilityCoordinates() {
+    let screens = [
+        CGRect(x: 0, y: 0, width: 1440, height: 900),
+        CGRect(x: 0, y: 900, width: 1440, height: 900)
+    ]
+
+    let point = AccessibilityHitTester.accessibilityPoint(
+        forAppKitPoint: CGPoint(x: 20, y: 1000),
+        screens: screens
+    )
+
+    expectEqual(point, CGPoint(x: 20, y: 800), "screen above primary coordinate conversion")
+}
+
+func testConvertsScreenBelowPrimaryPointToAccessibilityCoordinates() {
+    let screens = [
+        CGRect(x: 0, y: 0, width: 1440, height: 900),
+        CGRect(x: 0, y: -900, width: 1440, height: 900)
+    ]
+
+    let point = AccessibilityHitTester.accessibilityPoint(
+        forAppKitPoint: CGPoint(x: 20, y: -100),
+        screens: screens
+    )
+
+    expectEqual(point, CGPoint(x: 20, y: 100), "screen below primary coordinate conversion")
 }
 
 func testReturnsNilWhenPointIsOutsideScreens() {
@@ -218,7 +246,9 @@ do {
     try testSendInvokesKillFunction()
     testThrowsWhenKillFunctionFails()
     testConvertsPrimaryScreenPointToAccessibilityCoordinates()
-    testConvertsNonPrimaryScreenPointToAccessibilityCoordinates()
+    testConvertsHorizontalNonPrimaryScreenPointToAccessibilityCoordinates()
+    testConvertsScreenAbovePrimaryPointToAccessibilityCoordinates()
+    testConvertsScreenBelowPrimaryPointToAccessibilityCoordinates()
     testReturnsNilWhenPointIsOutsideScreens()
     print("mxkillUnitTests: PASS")
 } catch {

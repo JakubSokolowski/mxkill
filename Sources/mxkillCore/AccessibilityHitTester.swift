@@ -48,7 +48,7 @@ public enum AccessibilityHitTester {
 
         return CGPoint(
             x: appKitPoint.x,
-            y: screen.maxY - (appKitPoint.y - screen.minY)
+            y: screen.maxY - appKitPoint.y
         )
     }
 
