@@ -11,7 +11,9 @@ public enum PickResult: Equatable {
 public final class ClickPicker {
     private var result: PickResult?
     private var monitors: [Any] = []
+    private var lastHighlightUpdate: Date?
     private let overlay: HighlightOverlay
+    private let highlightThrottleInterval: TimeInterval = 0.05
 
     public init(overlay: HighlightOverlay = HighlightOverlay()) {
         self.overlay = overlay
@@ -20,6 +22,7 @@ public final class ClickPicker {
     public func pick(timeoutSeconds: Double?) -> PickResult {
         NSApplication.shared.setActivationPolicy(.accessory)
         NSCursor.crosshair.set()
+        lastHighlightUpdate = nil
 
         guard installMonitors() else {
             cleanup()
@@ -65,16 +68,14 @@ public final class ClickPicker {
 
         monitors.append(rightMouseMonitor)
 
-        guard let mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
+        if let mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged],
             handler: { [weak self] event in
                 self?.updateHighlight(at: event.locationInWindow)
             }
-        ) else {
-            return false
+        ) {
+            monitors.append(mouseMoveMonitor)
         }
-
-        monitors.append(mouseMoveMonitor)
 
         if let keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown], handler: { [weak self] event in
             if event.keyCode == 53 {
@@ -88,6 +89,14 @@ public final class ClickPicker {
     }
 
     private func updateHighlight(at point: CGPoint) {
+        let now = Date()
+        if let lastHighlightUpdate,
+           now.timeIntervalSince(lastHighlightUpdate) < highlightThrottleInterval {
+            return
+        }
+
+        lastHighlightUpdate = now
+
         guard let target = AccessibilityHoverHitTester.hoverTarget(at: point) else {
             overlay.hide()
             return
@@ -118,6 +127,7 @@ public final class ClickPicker {
 
     private func cleanup() {
         overlay.hide()
+        lastHighlightUpdate = nil
         removeMonitors()
         NSCursor.arrow.set()
     }

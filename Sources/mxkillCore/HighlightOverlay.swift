@@ -9,6 +9,7 @@ public final class HighlightOverlay {
         borderView = NSView(frame: .zero)
         borderView.wantsLayer = true
         borderView.autoresizingMask = [.width, .height]
+        borderView.setAccessibilityElement(false)
         borderView.layer?.borderColor = NSColor.systemRed.cgColor
         borderView.layer?.borderWidth = 4
         borderView.layer?.backgroundColor = NSColor.clear.cgColor
@@ -23,6 +24,7 @@ public final class HighlightOverlay {
         window.backgroundColor = .clear
         window.hasShadow = false
         window.ignoresMouseEvents = true
+        window.setAccessibilityElement(false)
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.contentView = borderView

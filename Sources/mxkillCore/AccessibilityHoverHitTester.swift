@@ -1,5 +1,6 @@
 import ApplicationServices
 import AppKit
+import Darwin
 import Foundation
 
 public enum AccessibilityHoverHitTester {
@@ -71,6 +72,12 @@ public enum AccessibilityHoverHitTester {
             return nil
         }
 
+        var pid: pid_t = 0
+        let pidValue: pid_t? = AXUIElementGetPid(element, &pid) == .success && pid > 0 ? pid : nil
+        guard pidValue != getpid() else {
+            return nil
+        }
+
         guard let point = cgPointAttribute(element, kAXPositionAttribute),
               let dimensions = cgSizeAttribute(element, kAXSizeAttribute),
               let frame = appKitFrame(
@@ -81,8 +88,6 @@ public enum AccessibilityHoverHitTester {
             return nil
         }
 
-        var pid: pid_t = 0
-        let pidValue: pid_t? = AXUIElementGetPid(element, &pid) == .success && pid > 0 ? pid : nil
         let processName = pidValue.flatMap { NSRunningApplication(processIdentifier: $0)?.localizedName }
         return HoverTarget(frame: frame, pid: pidValue, processName: processName)
     }
