@@ -184,7 +184,7 @@ func testConvertsHorizontalNonPrimaryScreenPointToAccessibilityCoordinates() {
         screens: screens
     )
 
-    expectEqual(point, CGPoint(x: -100, y: 824), "non-primary screen coordinate conversion")
+    expectEqual(point, CGPoint(x: -100, y: 700), "non-primary screen coordinate conversion")
 }
 
 func testConvertsScreenAbovePrimaryPointToAccessibilityCoordinates() {
@@ -198,7 +198,7 @@ func testConvertsScreenAbovePrimaryPointToAccessibilityCoordinates() {
         screens: screens
     )
 
-    expectEqual(point, CGPoint(x: 20, y: 800), "screen above primary coordinate conversion")
+    expectEqual(point, CGPoint(x: 20, y: -100), "screen above primary coordinate conversion")
 }
 
 func testConvertsScreenBelowPrimaryPointToAccessibilityCoordinates() {
@@ -212,7 +212,7 @@ func testConvertsScreenBelowPrimaryPointToAccessibilityCoordinates() {
         screens: screens
     )
 
-    expectEqual(point, CGPoint(x: 20, y: 100), "screen below primary coordinate conversion")
+    expectEqual(point, CGPoint(x: 20, y: 1000), "screen below primary coordinate conversion")
 }
 
 func testReturnsNilWhenPointIsOutsideScreens() {
