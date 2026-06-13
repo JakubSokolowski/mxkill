@@ -11,22 +11,15 @@ public enum PickResult: Equatable {
 public final class ClickPicker {
     private var result: PickResult?
     private var monitors: [Any] = []
-    private var lastHighlightUpdate: Date?
-    private let overlay: HighlightOverlay
-    private let cursorOverlay: CursorOverlay
-    private let highlightThrottleInterval: TimeInterval = 0.05
-    private var systemCursorHidden = false
+    private let pointerPresenter: PointerPresenter
 
-    public init(overlay: HighlightOverlay = HighlightOverlay(), cursorOverlay: CursorOverlay = CursorOverlay()) {
-        self.overlay = overlay
-        self.cursorOverlay = cursorOverlay
+    public init(pointerPresenter: PointerPresenter = PointerPresenter()) {
+        self.pointerPresenter = pointerPresenter
     }
 
     public func pick(timeoutSeconds: Double?) -> PickResult {
         NSApplication.shared.setActivationPolicy(.accessory)
-        hideSystemCursor()
-        cursorOverlay.show(at: NSEvent.mouseLocation)
-        lastHighlightUpdate = nil
+        pointerPresenter.start(at: NSEvent.mouseLocation)
 
         guard installMonitors() else {
             cleanup()
@@ -75,7 +68,7 @@ public final class ClickPicker {
         if let mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged],
             handler: { [weak self] event in
-                self?.updateCursorAndHighlight(at: event.locationInWindow)
+                self?.pointerPresenter.update(at: event.locationInWindow)
             }
         ) {
             monitors.append(mouseMoveMonitor)
@@ -90,25 +83,6 @@ public final class ClickPicker {
         }
 
         return true
-    }
-
-    private func updateCursorAndHighlight(at point: CGPoint) {
-        cursorOverlay.show(at: point)
-
-        let now = Date()
-        if let lastHighlightUpdate,
-           now.timeIntervalSince(lastHighlightUpdate) < highlightThrottleInterval {
-            return
-        }
-
-        lastHighlightUpdate = now
-
-        guard let target = AccessibilityHoverHitTester.hoverTarget(at: point) else {
-            overlay.hide()
-            return
-        }
-
-        overlay.show(frame: target.frame)
     }
 
     private func scheduleTimeout(_ timeoutSeconds: Double?) {
@@ -132,28 +106,7 @@ public final class ClickPicker {
     }
 
     private func cleanup() {
-        overlay.hide()
-        cursorOverlay.hide()
-        lastHighlightUpdate = nil
         removeMonitors()
-        showSystemCursor()
-    }
-
-    private func hideSystemCursor() {
-        guard !systemCursorHidden else {
-            return
-        }
-
-        CGDisplayHideCursor(CGMainDisplayID())
-        systemCursorHidden = true
-    }
-
-    private func showSystemCursor() {
-        guard systemCursorHidden else {
-            return
-        }
-
-        CGDisplayShowCursor(CGMainDisplayID())
-        systemCursorHidden = false
+        pointerPresenter.stop()
     }
 }
