@@ -5,7 +5,7 @@ public enum DestructiveCursor {
     public static let defaultSize = CGSize(width: 44, height: 44)
 
     public static func hotSpot(for size: CGSize) -> CGPoint {
-        CGPoint(x: size.width - 8, y: 8)
+        CGPoint(x: size.width - 14, y: 14)
     }
 
     public static func make(size: CGSize = defaultSize) -> NSCursor {
@@ -16,23 +16,10 @@ public enum DestructiveCursor {
         let image = NSImage(size: size)
 
         image.lockFocus()
-        let hotSpot = hotSpot(for: size)
-        drawCrosshair(at: hotSpot, in: CGRect(origin: .zero, size: size))
-        drawSkullEmoji(in: CGRect(x: 1, y: size.height - 31, width: 30, height: 30))
+        drawSkullEmoji(in: CGRect(x: 2, y: size.height - 32, width: 30, height: 30))
         image.unlockFocus()
 
         return image
-    }
-
-    private static func drawCrosshair(at point: CGPoint, in rect: CGRect) {
-        NSColor.systemRed.setStroke()
-        let crosshair = NSBezierPath()
-        crosshair.lineWidth = 2
-        crosshair.move(to: CGPoint(x: point.x, y: max(rect.minY + 1, point.y - 8)))
-        crosshair.line(to: CGPoint(x: point.x, y: min(rect.maxY - 1, point.y + 8)))
-        crosshair.move(to: CGPoint(x: max(rect.minX + 1, point.x - 8), y: point.y))
-        crosshair.line(to: CGPoint(x: min(rect.maxX - 1, point.x + 8), y: point.y))
-        crosshair.stroke()
     }
 
     private static func drawSkullEmoji(in rect: CGRect) {
