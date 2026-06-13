@@ -9,6 +9,10 @@ public enum DestructiveCursor {
     }
 
     public static func make(size: CGSize = defaultSize) -> NSCursor {
+        NSCursor(image: image(size: size), hotSpot: hotSpot(for: size))
+    }
+
+    public static func image(size: CGSize = defaultSize) -> NSImage {
         let image = NSImage(size: size)
 
         image.lockFocus()
@@ -16,7 +20,7 @@ public enum DestructiveCursor {
         drawSkull(in: CGRect(x: 8, y: 7, width: 16, height: 18))
         image.unlockFocus()
 
-        return NSCursor(image: image, hotSpot: hotSpot(for: size))
+        return image
     }
 
     private static func drawCrosshair(in rect: CGRect) {

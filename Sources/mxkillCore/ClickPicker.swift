@@ -13,15 +13,19 @@ public final class ClickPicker {
     private var monitors: [Any] = []
     private var lastHighlightUpdate: Date?
     private let overlay: HighlightOverlay
+    private let cursorOverlay: CursorOverlay
     private let highlightThrottleInterval: TimeInterval = 0.05
+    private var systemCursorHidden = false
 
-    public init(overlay: HighlightOverlay = HighlightOverlay()) {
+    public init(overlay: HighlightOverlay = HighlightOverlay(), cursorOverlay: CursorOverlay = CursorOverlay()) {
         self.overlay = overlay
+        self.cursorOverlay = cursorOverlay
     }
 
     public func pick(timeoutSeconds: Double?) -> PickResult {
         NSApplication.shared.setActivationPolicy(.accessory)
-        DestructiveCursor.make().set()
+        hideSystemCursor()
+        cursorOverlay.show(at: NSEvent.mouseLocation)
         lastHighlightUpdate = nil
 
         guard installMonitors() else {
@@ -71,7 +75,7 @@ public final class ClickPicker {
         if let mouseMoveMonitor = NSEvent.addGlobalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged, .rightMouseDragged],
             handler: { [weak self] event in
-                self?.updateHighlight(at: event.locationInWindow)
+                self?.updateCursorAndHighlight(at: event.locationInWindow)
             }
         ) {
             monitors.append(mouseMoveMonitor)
@@ -88,7 +92,9 @@ public final class ClickPicker {
         return true
     }
 
-    private func updateHighlight(at point: CGPoint) {
+    private func updateCursorAndHighlight(at point: CGPoint) {
+        cursorOverlay.show(at: point)
+
         let now = Date()
         if let lastHighlightUpdate,
            now.timeIntervalSince(lastHighlightUpdate) < highlightThrottleInterval {
@@ -127,8 +133,27 @@ public final class ClickPicker {
 
     private func cleanup() {
         overlay.hide()
+        cursorOverlay.hide()
         lastHighlightUpdate = nil
         removeMonitors()
-        NSCursor.arrow.set()
+        showSystemCursor()
+    }
+
+    private func hideSystemCursor() {
+        guard !systemCursorHidden else {
+            return
+        }
+
+        CGDisplayHideCursor(CGMainDisplayID())
+        systemCursorHidden = true
+    }
+
+    private func showSystemCursor() {
+        guard systemCursorHidden else {
+            return
+        }
+
+        CGDisplayShowCursor(CGMainDisplayID())
+        systemCursorHidden = false
     }
 }

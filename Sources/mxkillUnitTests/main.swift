@@ -260,6 +260,16 @@ func testDestructiveCursorHotSpotIsCentered() {
     expectEqual(DestructiveCursor.hotSpot(for: DestructiveCursor.defaultSize), CGPoint(x: 16, y: 16), "destructive cursor hot spot")
 }
 
+func testCursorOverlayFrameUsesHotSpot() {
+    let frame = CursorOverlay.frame(
+        forPointerLocation: CGPoint(x: 100, y: 200),
+        size: CGSize(width: 32, height: 32),
+        hotSpot: CGPoint(x: 16, y: 16)
+    )
+
+    expectEqual(frame, CGRect(x: 84, y: 184, width: 32, height: 32), "cursor overlay frame")
+}
+
 do {
     testHarnessIsConfigured()
     try testDefaultsUseTermSignalAndNoTimeout()
@@ -286,6 +296,7 @@ do {
     testConvertsAXFrameToAppKitFrameOnAbovePrimaryScreen()
     testConvertsAXFrameToAppKitFrameOnBelowPrimaryScreen()
     testDestructiveCursorHotSpotIsCentered()
+    testCursorOverlayFrameUsesHotSpot()
     print("mxkillUnitTests: PASS")
 } catch {
     fail("unexpected thrown error: \(error)")
