@@ -1,5 +1,7 @@
 # mxkill
 
+[![CI](https://github.com/JakubSokolowski/mxkill/actions/workflows/ci.yml/badge.svg)](https://github.com/JakubSokolowski/mxkill/actions/workflows/ci.yml)
+
 `mxkill` is a small macOS command-line tool inspired by Linux `xkill`.
 Run it, click a window, and `mxkill` sends a signal to the process that owns that window.
 
