@@ -255,19 +255,19 @@ func testConvertsAXFrameToAppKitFrameOnBelowPrimaryScreen() {
     expectEqual(converted, Optional(CGRect(x: 100, y: -250, width: 300, height: 150)), "below-primary AX frame conversion")
 }
 
-func testDestructiveCursorHotSpotIsCentered() {
-    expectEqual(DestructiveCursor.defaultSize, CGSize(width: 32, height: 32), "destructive cursor default size")
-    expectEqual(DestructiveCursor.hotSpot(for: DestructiveCursor.defaultSize), CGPoint(x: 16, y: 16), "destructive cursor hot spot")
+func testDestructiveCursorHotSpotPlacesIconUpLeftOfPointer() {
+    expectEqual(DestructiveCursor.defaultSize, CGSize(width: 44, height: 44), "destructive cursor default size")
+    expectEqual(DestructiveCursor.hotSpot(for: DestructiveCursor.defaultSize), CGPoint(x: 36, y: 8), "destructive cursor hot spot")
 }
 
 func testCursorOverlayFrameUsesHotSpot() {
     let frame = CursorOverlay.frame(
         forPointerLocation: CGPoint(x: 100, y: 200),
-        size: CGSize(width: 32, height: 32),
-        hotSpot: CGPoint(x: 16, y: 16)
+        size: CGSize(width: 44, height: 44),
+        hotSpot: CGPoint(x: 36, y: 8)
     )
 
-    expectEqual(frame, CGRect(x: 84, y: 184, width: 32, height: 32), "cursor overlay frame")
+    expectEqual(frame, CGRect(x: 64, y: 192, width: 44, height: 44), "cursor overlay frame")
 }
 
 do {
@@ -295,7 +295,7 @@ do {
     testConvertsAXFrameToAppKitFrameOnPrimaryScreen()
     testConvertsAXFrameToAppKitFrameOnAbovePrimaryScreen()
     testConvertsAXFrameToAppKitFrameOnBelowPrimaryScreen()
-    testDestructiveCursorHotSpotIsCentered()
+    testDestructiveCursorHotSpotPlacesIconUpLeftOfPointer()
     testCursorOverlayFrameUsesHotSpot()
     print("mxkillUnitTests: PASS")
 } catch {

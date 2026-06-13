@@ -2,10 +2,10 @@ import AppKit
 import Foundation
 
 public enum DestructiveCursor {
-    public static let defaultSize = CGSize(width: 32, height: 32)
+    public static let defaultSize = CGSize(width: 44, height: 44)
 
     public static func hotSpot(for size: CGSize) -> CGPoint {
-        CGPoint(x: size.width / 2, y: size.height / 2)
+        CGPoint(x: size.width - 8, y: 8)
     }
 
     public static func make(size: CGSize = defaultSize) -> NSCursor {
@@ -16,66 +16,35 @@ public enum DestructiveCursor {
         let image = NSImage(size: size)
 
         image.lockFocus()
-        drawCrosshair(in: CGRect(origin: .zero, size: size))
-        drawSkull(in: CGRect(x: 8, y: 7, width: 16, height: 18))
+        let hotSpot = hotSpot(for: size)
+        drawCrosshair(at: hotSpot, in: CGRect(origin: .zero, size: size))
+        drawSkullEmoji(in: CGRect(x: 1, y: size.height - 31, width: 30, height: 30))
         image.unlockFocus()
 
         return image
     }
 
-    private static func drawCrosshair(in rect: CGRect) {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-
+    private static func drawCrosshair(at point: CGPoint, in rect: CGRect) {
         NSColor.systemRed.setStroke()
         let crosshair = NSBezierPath()
         crosshair.lineWidth = 2
-        crosshair.move(to: CGPoint(x: center.x, y: rect.minY + 1))
-        crosshair.line(to: CGPoint(x: center.x, y: rect.maxY - 1))
-        crosshair.move(to: CGPoint(x: rect.minX + 1, y: center.y))
-        crosshair.line(to: CGPoint(x: rect.maxX - 1, y: center.y))
+        crosshair.move(to: CGPoint(x: point.x, y: max(rect.minY + 1, point.y - 8)))
+        crosshair.line(to: CGPoint(x: point.x, y: min(rect.maxY - 1, point.y + 8)))
+        crosshair.move(to: CGPoint(x: max(rect.minX + 1, point.x - 8), y: point.y))
+        crosshair.line(to: CGPoint(x: min(rect.maxX - 1, point.x + 8), y: point.y))
         crosshair.stroke()
     }
 
-    private static func drawSkull(in rect: CGRect) {
-        let skull = NSBezierPath(ovalIn: CGRect(
-            x: rect.minX + 2,
-            y: rect.minY + 5,
-            width: rect.width - 4,
-            height: rect.height - 3
-        ))
+    private static func drawSkullEmoji(in rect: CGRect) {
+        let font = NSFont(name: "Apple Color Emoji", size: 25) ?? NSFont.systemFont(ofSize: 25)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
 
-        NSColor.white.setFill()
-        skull.fill()
-        NSColor.black.setStroke()
-        skull.lineWidth = 1.25
-        skull.stroke()
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraph
+        ]
 
-        NSColor.black.setFill()
-        NSBezierPath(ovalIn: CGRect(x: rect.minX + 5, y: rect.minY + 12, width: 3.5, height: 4)).fill()
-        NSBezierPath(ovalIn: CGRect(x: rect.maxX - 8.5, y: rect.minY + 12, width: 3.5, height: 4)).fill()
-
-        let nose = NSBezierPath()
-        nose.move(to: CGPoint(x: rect.midX, y: rect.minY + 11))
-        nose.line(to: CGPoint(x: rect.midX - 2, y: rect.minY + 7))
-        nose.line(to: CGPoint(x: rect.midX + 2, y: rect.minY + 7))
-        nose.close()
-        nose.fill()
-
-        let jaw = NSBezierPath(rect: CGRect(x: rect.minX + 5, y: rect.minY + 3, width: rect.width - 10, height: 5))
-        NSColor.white.setFill()
-        jaw.fill()
-        NSColor.black.setStroke()
-        jaw.lineWidth = 1.25
-        jaw.stroke()
-
-        let teeth = NSBezierPath()
-        teeth.lineWidth = 1
-        teeth.move(to: CGPoint(x: rect.midX, y: rect.minY + 3))
-        teeth.line(to: CGPoint(x: rect.midX, y: rect.minY + 8))
-        teeth.move(to: CGPoint(x: rect.midX - 3, y: rect.minY + 3.5))
-        teeth.line(to: CGPoint(x: rect.midX - 3, y: rect.minY + 7.5))
-        teeth.move(to: CGPoint(x: rect.midX + 3, y: rect.minY + 3.5))
-        teeth.line(to: CGPoint(x: rect.midX + 3, y: rect.minY + 7.5))
-        teeth.stroke()
+        ("💀" as NSString).draw(in: rect, withAttributes: attributes)
     }
 }
