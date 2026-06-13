@@ -21,7 +21,7 @@ public final class ClickPicker {
 
     public func pick(timeoutSeconds: Double?) -> PickResult {
         NSApplication.shared.setActivationPolicy(.accessory)
-        NSCursor.crosshair.set()
+        DestructiveCursor.make().set()
         lastHighlightUpdate = nil
 
         guard installMonitors() else {

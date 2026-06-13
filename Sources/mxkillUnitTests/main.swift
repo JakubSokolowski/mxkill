@@ -255,6 +255,11 @@ func testConvertsAXFrameToAppKitFrameOnBelowPrimaryScreen() {
     expectEqual(converted, Optional(CGRect(x: 100, y: -250, width: 300, height: 150)), "below-primary AX frame conversion")
 }
 
+func testDestructiveCursorHotSpotIsCentered() {
+    expectEqual(DestructiveCursor.defaultSize, CGSize(width: 32, height: 32), "destructive cursor default size")
+    expectEqual(DestructiveCursor.hotSpot(for: DestructiveCursor.defaultSize), CGPoint(x: 16, y: 16), "destructive cursor hot spot")
+}
+
 do {
     testHarnessIsConfigured()
     try testDefaultsUseTermSignalAndNoTimeout()
@@ -280,6 +285,7 @@ do {
     testConvertsAXFrameToAppKitFrameOnPrimaryScreen()
     testConvertsAXFrameToAppKitFrameOnAbovePrimaryScreen()
     testConvertsAXFrameToAppKitFrameOnBelowPrimaryScreen()
+    testDestructiveCursorHotSpotIsCentered()
     print("mxkillUnitTests: PASS")
 } catch {
     fail("unexpected thrown error: \(error)")
