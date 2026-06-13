@@ -5,7 +5,7 @@ public enum DestructiveCursor {
     public static let defaultSize = CGSize(width: 44, height: 44)
 
     public static func hotSpot(for size: CGSize) -> CGPoint {
-        CGPoint(x: size.width - 14, y: 14)
+        CGPoint(x: size.width - 20, y: 14)
     }
 
     public static func make(size: CGSize = defaultSize) -> NSCursor {
