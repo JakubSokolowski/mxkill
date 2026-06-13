@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 public final class HighlightOverlay {
-    private let window: NSWindow
+    private let window: OverlayWindow
     private let borderView: NSView
 
     public init() {
@@ -14,28 +14,19 @@ public final class HighlightOverlay {
         borderView.layer?.borderWidth = 4
         borderView.layer?.backgroundColor = NSColor.clear.cgColor
 
-        window = NSWindow(
+        window = OverlayWindow(
             contentRect: .zero,
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+            contentView: borderView,
+            level: .floating,
+            collectionBehavior: [.canJoinAllSpaces, .fullScreenAuxiliary]
         )
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.ignoresMouseEvents = true
-        window.setAccessibilityElement(false)
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.contentView = borderView
     }
 
     public func show(frame: CGRect) {
-        window.setFrame(frame, display: true)
-        window.orderFrontRegardless()
+        window.show(frame: frame)
     }
 
     public func hide() {
-        window.orderOut(nil)
+        window.hide()
     }
 }

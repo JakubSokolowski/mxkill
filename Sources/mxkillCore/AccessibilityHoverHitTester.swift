@@ -5,25 +5,10 @@ import Foundation
 
 public enum AccessibilityHoverHitTester {
     public static func appKitFrame(forAXFrame axFrame: CGRect, screens: [CGRect]) -> CGRect? {
-        guard let primaryScreen = screens.first else {
-            return nil
-        }
-
-        let appKitFrame = CGRect(
-            x: axFrame.origin.x,
-            y: primaryScreen.maxY - axFrame.origin.y - axFrame.height,
-            width: axFrame.width,
-            height: axFrame.height
-        )
-
-        guard screens.contains(where: { $0.intersects(appKitFrame) }) else {
-            return nil
-        }
-
-        return appKitFrame
+        ScreenGeometry.appKitFrame(forAXFrame: axFrame, screens: screens)
     }
 
-    public static func hoverTarget(at appKitPoint: CGPoint) -> HoverTarget? {
+    public static func hoverTarget(at appKitPoint: CGPoint) -> WindowHighlightTarget? {
         guard let accessibilityPoint = AccessibilityHitTester.accessibilityPoint(
             forAppKitPoint: appKitPoint,
             screens: NSScreen.screens.map(\.frame)
@@ -45,7 +30,7 @@ public enum AccessibilityHoverHitTester {
         return hoverTarget(from: element)
     }
 
-    private static func hoverTarget(from element: AXUIElement) -> HoverTarget? {
+    private static func hoverTarget(from element: AXUIElement) -> WindowHighlightTarget? {
         var current: AXUIElement? = element
 
         while let candidate = current {
@@ -64,7 +49,7 @@ public enum AccessibilityHoverHitTester {
         return nil
     }
 
-    private static func targetIfWindowLike(_ element: AXUIElement) -> HoverTarget? {
+    private static func targetIfWindowLike(_ element: AXUIElement) -> WindowHighlightTarget? {
         var roleValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleValue) == .success,
               (roleValue as? String) == kAXWindowRole
@@ -88,8 +73,7 @@ public enum AccessibilityHoverHitTester {
             return nil
         }
 
-        let processName = pidValue.flatMap { NSRunningApplication(processIdentifier: $0)?.localizedName }
-        return HoverTarget(frame: frame, pid: pidValue, processName: processName)
+        return WindowHighlightTarget(frame: frame)
     }
 
     private static func cgPointAttribute(_ element: AXUIElement, _ attribute: String) -> CGPoint? {

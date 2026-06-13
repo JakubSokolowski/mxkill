@@ -37,23 +37,7 @@ public enum HitTestError: Error, CustomStringConvertible {
 
 public enum AccessibilityHitTester {
     public static func accessibilityPoint(forAppKitPoint appKitPoint: CGPoint, screens: [CGRect]) -> CGPoint? {
-        guard let primaryScreen = screens.first else {
-            return nil
-        }
-
-        guard screens.contains(where: { screen in
-            appKitPoint.x >= screen.minX &&
-                appKitPoint.x < screen.maxX &&
-                appKitPoint.y >= screen.minY &&
-                appKitPoint.y < screen.maxY
-        }) else {
-            return nil
-        }
-
-        return CGPoint(
-            x: appKitPoint.x,
-            y: primaryScreen.maxY - appKitPoint.y
-        )
+        ScreenGeometry.accessibilityPoint(forAppKitPoint: appKitPoint, screens: screens)
     }
 
     public static func targetProcess(at screenPoint: CGPoint) throws -> TargetProcess {

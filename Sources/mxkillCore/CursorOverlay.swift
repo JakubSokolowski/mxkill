@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 public final class CursorOverlay {
-    private let window: NSWindow
+    private let window: OverlayWindow
     private let size: CGSize
     private let hotSpot: CGPoint
 
@@ -19,20 +19,12 @@ public final class CursorOverlay {
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.setAccessibilityElement(false)
 
-        window = NSWindow(
+        window = OverlayWindow(
             contentRect: CGRect(origin: .zero, size: size),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+            contentView: imageView,
+            level: .screenSaver,
+            collectionBehavior: [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         )
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = false
-        window.ignoresMouseEvents = true
-        window.level = .screenSaver
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        window.contentView = imageView
-        window.setAccessibilityElement(false)
     }
 
     public static func frame(forPointerLocation point: CGPoint, size: CGSize, hotSpot: CGPoint) -> CGRect {
@@ -45,11 +37,10 @@ public final class CursorOverlay {
     }
 
     public func show(at point: CGPoint) {
-        window.setFrame(Self.frame(forPointerLocation: point, size: size, hotSpot: hotSpot), display: true)
-        window.orderFrontRegardless()
+        window.show(frame: Self.frame(forPointerLocation: point, size: size, hotSpot: hotSpot))
     }
 
     public func hide() {
-        window.orderOut(nil)
+        window.hide()
     }
 }
